@@ -134,14 +134,8 @@ export function MusicLibrary() {
 
   };
 
+  // IMPORTANT FIX: allow preview for locked songs
   const playSong = (song: any) => {
-
-    if (!song.unlocked) {
-
-      setMessage("Song locked. Unlock first.");
-      return;
-
-    }
 
     setCurrentSong(song);
 

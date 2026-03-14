@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Lock } from "lucide-react";
 
 interface PlayerProps {
   song: any;
@@ -7,34 +7,71 @@ interface PlayerProps {
 
 export function MusicPlayer({ song }: PlayerProps) {
 
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [previewEnded, setPreviewEnded] = useState(false);
 
   if (!song) return null;
 
-  const previewStart = isNaN(Number(song?.previewStart))
-    ? 0
-    : Number(song.previewStart);
+  const audioSrc =
+    song.audio ||
+    song.audioUrl ||
+    song.url ||
+    "";
 
-  const previewEnd = isNaN(Number(song?.previewEnd))
-    ? 5
-    : Number(song.previewEnd);
+  if (!audioSrc) return null;
+
+  // SAFE convert mm:ss OR seconds → seconds
+  const convertTime = (time: any) => {
+
+    if (!time) return 0;
+
+    // if already a number
+    if (typeof time === "number") {
+      return time;
+    }
+
+    // if string like "00:30"
+    if (typeof time === "string" && time.includes(":")) {
+
+      const parts = time.split(":");
+
+      const minutes = Number(parts[0]) || 0;
+      const seconds = Number(parts[1]) || 0;
+
+      return minutes * 60 + seconds;
+    }
+
+    // fallback
+    return Number(time) || 0;
+  };
+
+  const previewStart = convertTime(song.previewStart || "00:00");
+  const previewEnd = convertTime(song.previewEnd || "00:30");
 
   const togglePlay = () => {
 
     if (!audioRef.current) return;
 
     if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
 
-    setPlaying(!playing);
+      audioRef.current.pause();
+      setPlaying(false);
+
+    } else {
+
+      if (!song.unlocked && audioRef.current.currentTime < previewStart) {
+        audioRef.current.currentTime = previewStart;
+      }
+
+      audioRef.current.play();
+      setPlaying(true);
+
+    }
 
   };
 
@@ -50,8 +87,7 @@ export function MusicPlayer({ song }: PlayerProps) {
 
       audioRef.current.pause();
       setPlaying(false);
-
-      alert("Preview finished. Unlock song to hear full track.");
+      setPreviewEnded(true);
 
     }
 
@@ -64,7 +100,6 @@ export function MusicPlayer({ song }: PlayerProps) {
     const value = Number(e.target.value) || 0;
 
     audioRef.current.currentTime = value;
-
     setProgress(value);
 
   };
@@ -87,17 +122,14 @@ export function MusicPlayer({ song }: PlayerProps) {
 
     setPlaying(false);
     setProgress(0);
+    setPreviewEnded(false);
 
     audioRef.current.volume = volume;
 
     if (!song.unlocked) {
-
       audioRef.current.currentTime = previewStart;
-
     } else {
-
       audioRef.current.currentTime = 0;
-
     }
 
   }, [song]);
@@ -124,7 +156,6 @@ export function MusicPlayer({ song }: PlayerProps) {
           </div>
 
         </div>
-
 
         {/* CENTER */}
 
@@ -160,7 +191,6 @@ export function MusicPlayer({ song }: PlayerProps) {
 
         </div>
 
-
         {/* RIGHT */}
 
         <div className="flex items-center gap-3 w-1/4 justify-end">
@@ -180,9 +210,21 @@ export function MusicPlayer({ song }: PlayerProps) {
 
       </div>
 
+      {!song.unlocked && previewEnded && (
+
+        <div className="mt-3 flex items-center justify-center gap-2 text-sm text-amber-400">
+
+          <Lock size={16} />
+
+          <span>Preview ended • Unlock full song</span>
+
+        </div>
+
+      )}
+
       <audio
         ref={audioRef}
-        src={song.audio}
+        src={audioSrc}
         onTimeUpdate={updateProgress}
         onLoadedMetadata={() => {
 
