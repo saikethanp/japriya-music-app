@@ -23,6 +23,7 @@ export function MusicLibrary() {
   const [currentSong, setCurrentSong] = useState<any | null>(null);
   const [otpSong, setOtpSong] = useState<any | null>(null);
   const [otpInput, setOtpInput] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
 
@@ -62,7 +63,11 @@ export function MusicLibrary() {
 
     setOtpSong(song);
 
-    alert("OTP requested. Ask admin for OTP.");
+    setMessage("OTP sent to admin. Contact admin for OTP.");
+
+    setTimeout(() => {
+      setMessage("");
+    }, 4000);
 
   };
 
@@ -81,7 +86,7 @@ export function MusicLibrary() {
 
     if (snap.empty) {
 
-      alert("Invalid OTP");
+      setMessage("Invalid OTP");
       return;
 
     }
@@ -95,19 +100,17 @@ export function MusicLibrary() {
     const diffSeconds =
       (now.getTime() - created.getTime()) / 1000;
 
-    // OTP expires after 5 minutes
-    if (diffSeconds > 300) {
+    if (diffSeconds > 480) {
 
       await updateDoc(doc(db, "otp_requests", docRef.id), {
         status: "expired"
       });
 
-      alert("OTP expired. Request new OTP.");
+      setMessage("OTP expired. Request a new OTP.");
       return;
 
     }
 
-    // mark OTP used
     await updateDoc(doc(db, "otp_requests", docRef.id), {
       status: "used"
     });
@@ -115,9 +118,7 @@ export function MusicLibrary() {
     const updatedSongs = songs.map((s) => {
 
       if (s.id === otpSong.id) {
-
         return { ...s, unlocked: true };
-
       }
 
       return s;
@@ -126,10 +127,23 @@ export function MusicLibrary() {
 
     setSongs(updatedSongs);
 
-    alert("Song unlocked!");
+    setMessage("Song unlocked successfully!");
 
     setOtpSong(null);
     setOtpInput("");
+
+  };
+
+  const playSong = (song: any) => {
+
+    if (!song.unlocked) {
+
+      setMessage("Song locked. Unlock first.");
+      return;
+
+    }
+
+    setCurrentSong(song);
 
   };
 
@@ -146,6 +160,12 @@ export function MusicLibrary() {
         <p className="text-slate-400">
           Listen to previews and unlock your favorite tracks.
         </p>
+
+        {message && (
+          <div className="mt-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-2 text-sm">
+            {message}
+          </div>
+        )}
 
       </div>
 
@@ -165,7 +185,7 @@ export function MusicLibrary() {
 
             <SongCard
               song={song}
-              onPlay={() => setCurrentSong(song)}
+              onPlay={playSong}
               onUnlock={() => requestOTP(song)}
             />
 
@@ -178,8 +198,6 @@ export function MusicLibrary() {
       {currentSong && (
         <MusicPlayer song={currentSong} />
       )}
-
-      {/* OTP MODAL */}
 
       {otpSong && (
 

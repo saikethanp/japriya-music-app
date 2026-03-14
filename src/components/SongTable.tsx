@@ -6,6 +6,7 @@ import { db } from "../lib/firebase";
 export function SongTable() {
 
   const [songs, setSongs] = useState<any[]>([]);
+  const [currentSong, setCurrentSong] = useState<any | null>(null);
 
   useEffect(() => {
 
@@ -37,6 +38,10 @@ export function SongTable() {
 
   };
 
+  const playSong = (song: any) => {
+    setCurrentSong(song);
+  };
+
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-card-dark shadow-xl">
 
@@ -47,12 +52,10 @@ export function SongTable() {
           <thead className="bg-white/5 text-xs uppercase text-slate-400">
 
             <tr>
-
               <th className="px-6 py-4 font-medium">Song</th>
               <th className="px-6 py-4 font-medium">Artist</th>
               <th className="px-6 py-4 font-medium">Status</th>
               <th className="px-6 py-4 font-medium text-right">Actions</th>
-
             </tr>
 
           </thead>
@@ -70,10 +73,14 @@ export function SongTable() {
                     <img
                       src={song.cover}
                       alt={song.title}
-                      className="h-10 w-10 rounded-md object-cover"
+                      className="h-10 w-10 rounded-md object-cover cursor-pointer hover:scale-105 transition"
+                      onClick={() => playSong(song)}
                     />
 
-                    <span className="font-medium text-white">
+                    <span
+                      className="font-medium text-white cursor-pointer"
+                      onClick={() => playSong(song)}
+                    >
                       {song.title}
                     </span>
 
@@ -128,6 +135,23 @@ export function SongTable() {
         </table>
 
       </div>
+
+      {currentSong && (
+        <div className="p-4 border-t border-white/10">
+
+          <p className="text-white mb-2">
+            Now Playing: {currentSong.title}
+          </p>
+
+          <audio
+            controls
+            autoPlay
+            src={currentSong.audio}
+            className="w-full"
+          />
+
+        </div>
+      )}
 
     </div>
   );

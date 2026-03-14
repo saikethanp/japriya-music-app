@@ -22,18 +22,41 @@ export function OTPTable() {
       collection(db, "otp_requests"),
       (snapshot) => {
 
-        const data = snapshot.docs
-          .map((d) => ({
+        const now = new Date();
+
+        const data = snapshot.docs.map((d) => {
+
+          const raw: any = d.data();
+
+          let status = raw.status;
+
+          if (raw.createdAt) {
+
+            const created = raw.createdAt.toDate();
+
+            const diffSeconds =
+              (now.getTime() - created.getTime()) / 1000;
+
+            // expire after 8 minutes
+            if (diffSeconds > 480 && raw.status === "pending") {
+              status = "expired";
+            }
+
+          }
+
+          return {
             id: d.id,
-            user: d.data().identifier,
-            otp: d.data().otp,
-            type: d.data().type,
-            status: d.data().status,
-            createdAt: d.data().createdAt
-          }))
-          .sort((a, b) =>
-            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-          );
+            user: raw.identifier,
+            otp: raw.otp,
+            type: raw.type,
+            status: status,
+            createdAt: raw.createdAt
+          };
+
+        })
+        .sort((a, b) =>
+          (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+        );
 
         setRequests(data);
 
@@ -84,7 +107,7 @@ export function OTPTable() {
 
     snapshot.forEach(async (docItem) => {
 
-      const data:any = docItem.data();
+      const data: any = docItem.data();
 
       if (!data.createdAt) return;
 
@@ -93,7 +116,7 @@ export function OTPTable() {
       const diffSeconds =
         (now.getTime() - created.getTime()) / 1000;
 
-      if (diffSeconds > 300) {
+      if (diffSeconds > 480) {
 
         await deleteDoc(doc(db, "otp_requests", docItem.id));
 

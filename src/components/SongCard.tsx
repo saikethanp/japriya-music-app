@@ -12,6 +12,7 @@ export function SongCard({ song, onPlay, onUnlock }: SongCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
+      onClick={() => onPlay(song)}
       className="group relative flex flex-col overflow-hidden rounded-xl bg-card-dark shadow-xl cursor-pointer"
     >
 
@@ -26,7 +27,10 @@ export function SongCard({ song, onPlay, onUnlock }: SongCardProps) {
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center">
 
           <button
-            onClick={() => onPlay(song)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPlay(song);
+            }}
             className="h-12 w-12 rounded-full bg-primary flex items-center justify-center"
           >
             <Play className="text-white ml-1"/>
@@ -44,7 +48,10 @@ export function SongCard({ song, onPlay, onUnlock }: SongCardProps) {
         {!song.unlocked && (
 
           <button
-            onClick={() => onUnlock(song)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnlock(song);
+            }}
             className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-white/10 py-2 text-sm text-white"
           >
             <Lock className="h-4 w-4"/>
